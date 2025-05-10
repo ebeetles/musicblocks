@@ -133,6 +133,11 @@ class AST2BlockList {
                         if (obj in _memberLookup && member in _memberLookup[obj]) {
                             let name = _memberLookup[obj][member];
                             if (typeof name === "object") {
+                                if (!(numArgs in name)) {
+                                    throw {
+                                        //TODO
+                                    };
+                                }
                                 name = name[numArgs];
                             }
                             return name;
@@ -342,6 +347,13 @@ class AST2BlockList {
                 "setInstrument": "settimbre",
                 "playNote": "newnote",
                 "playPitch": "pitch",
+                "playRest": "rest2",
+                "dot": "rhythmicdot2",
+                "tie": "tie",
+                "multiplyNoteValue": "multiplybeatfactor",
+                "swing": "newswing2",
+                "playNoteMillis": "osctime",
+                "playHertz": "hertz",
                 // Handle function overloading with different number of arguments
                 "setValue": { 3: "setDict", 2: "setDict2" },
                 "getValue": { 2: "getDict", 1: "getDict2" },
@@ -528,6 +540,31 @@ class AST2BlockList {
             //   [10, ["number", { "value": 4 }], 0, 0, [8]],
             "newnote": _addValueArgsToBlockList,
 
+            // Dot block takes in a whole number
+            // Example: mouse.dot(3, async () => {...});
+            // args: [3]
+            "rhythmicdot2": _addValueArgsToBlockList,
+
+            // Multiply note value block takes in a number expression that evaluates to 1, 1/2, 1/4, etc.
+            // Example: mouse.multiplyNoteValue(1 / 4, async () => {...});
+            // args: [{"name": "divide"}, "args": [1, 4]] =>
+            //   [7, "divide", 0, 0, [6, 8, 9]],
+            //   [8, ["number", { "value": 1 }], 0, 0, [7]],
+            //   [9, ["number", { "value": 4 }], 0, 0, [7]],
+            "multiplybeatfactor": _addValueArgsToBlockList,
+
+            // Swing block takes two args, a number expression as swing value, and another expression as note value
+            // Example: mouse.swing(1 / 24, 1 / 8, async () => {...});
+            "newswing2": _addValueArgsToBlockList,
+
+            // Milliseconds note block takes in a number expression that evaluates to 1, 1/2, 1/4, etc.
+            // Example: mouse.playNoteMillis(1000 / (3 / 2), async () => {...});
+            "osctime": _addValueArgsToBlockList,
+
+            // Hertz block takes in a whole number 
+            // Example: mouse.playHertz(392);
+            "hertz": _addValueArgsToBlockList,
+
             // Boxes Palette, subtract 1 from block takes a string identifier for variable
             // Example: box1 = box1 - 1;
             // args: [{"identifier": "box1"}]
@@ -631,6 +668,41 @@ class AST2BlockList {
                 // prev, arg1 (solfege), arg2 (octave), next
                 connections: { count: 4, "prev": 0, "next": 3 },
                 vspaces: 2,
+            },
+            "rest2": {
+                // prev, next
+                connections: { count: 2, "prev": 0, "next": 1 },
+                vspaces: 1,
+            },
+            "rhythmicdot2": {
+                // prev, arg (duration), child, next
+                connections: { count: 4, "prev": 0, "child": 2, "next": 3 },
+                argVSpaces: 1,
+            },
+            "tie": {
+                // prev, child, next
+                connections: { count: 3, "prev": 0, "child": 1, "next": 2 },
+                argVSpaces: 0,
+            },
+            "multiplybeatfactor": {
+                // prev, arg (duration), child, next
+                connections: { count: 4, "prev": 0, "child": 2, "next": 3 },
+                argVSpaces: 1,
+            },
+            "newswing2": {
+                // prev, arg1 (swing), arg2 (note), child, next
+                connections: { count: 5, "prev": 0, "child": 3, "next": 4 },
+                argVSpaces: 2,
+            },
+            "osctime": {
+                // prev, arg (duration), child, next
+                connections: { count: 4, "prev": 0, "child": 2, "next": 3 },
+                argVSpaces: 1,
+            },
+            "hertz": {
+                // prev, child, next
+                connections: { count: 4, "prev": 0, "child": 1, "next": 2 },
+                argVSpaces: 1,
             },
             "newnote": {
                 // prev, arg (note), child, next
