@@ -172,15 +172,93 @@ class AST2BlockList {
                 }
             },
 
-            // Flow Palette, If block
+            // Flow Palette, While and Forever block
+            {
+                pred: (bodyAST) => {
+                    return bodyAST.type == "WhileStatement";
+                },
+                visitor: {
+                    getName: (bodyAST) => { return bodyAST.test.value ? "forever" : "while"; },
+                    getArguments: (bodyAST) => { return bodyAST.test.value ? [] : [bodyAST.test]; },
+                    getChildren: (bodyAST) => { return bodyAST.body.body; },
+                }
+            },
+
+            // Flow Palette, DoWhile (until) block
+            {
+                pred: (bodyAST) => {
+                    return bodyAST.type == "DoWhileStatement";
+                },
+                visitor: {
+                    getName: () => { return "until"; },
+                    getArguments: (bodyAST) => { return [bodyAST.test]; },
+                    getChildren: (bodyAST) => { return bodyAST.body.body; },
+                }
+            },
+
+            // Flow Palette, If/Ifelse block
             {
                 pred: (bodyAST) => {
                     return bodyAST.type == "IfStatement";
                 },
                 visitor: {
-                    getName: () => { return "if"; },
+                    getName: (bodyAST) => { return bodyAST.alternate ? "ifthenelse" : "if"; },
                     getArguments: (bodyAST) => { return [bodyAST.test]; },
-                    getChildren: (bodyAST) => { return bodyAST.consequent.body; },
+                    getChildren: (bodyAST) => {
+                        if (bodyAST.alternate) {
+                            return bodyAST.consequent.body.concat([{ "type": null, }], bodyAST.alternate.body);
+                        } else {
+                            return bodyAST.consequent.body;
+                        }
+                    },
+                }
+            },
+
+            // Special case for else section of ifelse block
+            {
+                pred: (bodyAST) => {
+                    return bodyAST.type == null;
+                },
+                visitor: {
+                    getName: () => { return "else"; },
+                    getArguments: () => { return []; },
+                    getChildren: () => { return []; },
+                }
+            },
+
+            // Flow Palette, Switch block
+            {
+                pred: (bodyAST) => {
+                    return bodyAST.type == "SwitchStatement";
+                },
+                visitor: {
+                    getName: () => { return "switch"; },
+                    getArguments: (bodyAST) => { return [bodyAST.discriminant]; },
+                    getChildren: (bodyAST) => { return bodyAST.cases; },
+                }
+            },
+
+            // Flow Palette, Case/Default block
+            {
+                pred: (bodyAST) => {
+                    return bodyAST.type == "SwitchCase";
+                },
+                visitor: {
+                    getName: (bodyAST) => { return bodyAST.test != null ? "case" : "defaultcase"; },
+                    getArguments: (bodyAST) => { return bodyAST.test != null ? [bodyAST.test] : []; },
+                    getChildren: (bodyAST) => { return bodyAST.consequent; },
+                }
+            },
+
+            // Flow Palette, break statement
+            {
+                pred: (bodyAST) => {
+                    return bodyAST.type == "BreakStatement";
+                },
+                visitor: {
+                    getName: (bodyAST) => { return "break"; },
+                    getArguments: (bodyAST) => { return []; },
+                    getChildren: (bodyAST) => { return []; },
                 }
             },
 
@@ -626,8 +704,23 @@ class AST2BlockList {
             // Flow Palette, repeat block takes a number expression
             "repeat": _addValueArgsToBlockList,
 
+            // Flow Palette, while block takes a condition
+            "while": _addValueArgsToBlockList,
+
+            // Flow Palette, until block takes a condition
+            "until": _addValueArgsToBlockList,
+
             // Flow Palette, if block takes a boolean expression
             "if": _addValueArgsToBlockList,
+
+            // Flow Palette, if block takes a boolean expression
+            "ifthenelse": _addValueArgsToBlockList,
+
+            // Flow Palette, switch block takes a numerical expression
+            "switch": _addValueArgsToBlockList,
+
+            // Flow Palette, case block takes a numerical expression
+            "case": _addValueArgsToBlockList,
         };
 
         // A map from block name to its properties including:
@@ -739,10 +832,50 @@ class AST2BlockList {
                 connections: { count: 4, "prev": 0, "child": 2, "next": 3 },
                 argVSpaces: 1,
             },
+            "while": {
+                // prev, arg (condition), child, next
+                connections: { count: 4, "prev": 0, "child": 2, "next": 3 },
+                argVSpaces: 2,
+            },
+            "forever": {
+                // prev, child, next
+                connections: { count: 3, "prev": 0, "child": 1, "next": 2 },
+                argVSpaces: 0,
+            },
+            "until": {
+                // prev, arg (condition), child, next
+                connections: { count: 3, "prev": 0, "child": 2, "next": 3 },
+                argVSpaces: 0,
+            },
             "if": {
                 // prev, arg (condition), child, next
                 connections: { count: 4, "prev": 0, "child": 2, "next": 3 },
                 argVSpaces: 2,
+            },
+            "ifthenelse": {
+                // prev, arg (condition), child (if and else cases), next
+                connections: { count: 5, "prev": 0, "child": 2, "next": 4 },
+                argVSpaces: 2,
+            },
+            "switch": {
+                // prev, arg (variable), child, next
+                connections: { count: 4, "prev": 0, "child": 2, "next": 3 },
+                argVSpaces: 1,
+            },
+            "case": {
+                // prev, arg (condition), child, next
+                connections: { count: 4, "prev": 0, "child": 2, "next": 3 },
+                argVSpaces: 1,
+            },
+            "defaultcase": {
+                // prev, child, next
+                connections: { count: 4, "prev": 0, "child": 1, "next": 2 },
+                argVSpaces: 0,
+            },
+            "break": {
+                // prev, next
+                connections: { count: 4, "prev": 0, "next": 1 },
+                vspaces: 1,
             },
             "vspace": {
                 // prev, next
@@ -793,7 +926,7 @@ class AST2BlockList {
             if ((typeof node.name) === "object") {
                 let blockName = Object.keys(node.name)[0];
                 block.push([blockName, { "value": node.name[blockName] }]);
-            } else {
+            } else if (node.name !== "else") {
                 block.push(node.name);
             }
             block.push(0);  // x
@@ -808,6 +941,7 @@ class AST2BlockList {
             let vspaces = Math.max(1, argVSpaces);  // A node takes at least 1 vertical space
 
             // Process children
+            let oneChild = true;
             if (node["children"] !== undefined && node["children"].length > 0) {
                 let childBlockNumbers = [];
                 // Add vertical spacers if the arguments take too much vertical spaces
@@ -816,6 +950,10 @@ class AST2BlockList {
                 }
                 // Add the children
                 for (const child of node["children"]) {
+                    if (child.name === "else") {
+                        oneChild = false;
+                        continue;
+                    }
                     let ret = _createBlockAndAddToList(child, blockList);
                     childBlockNumbers.push(ret["blockNumber"]);
                     vspaces += ret["vspaces"];
@@ -828,6 +966,9 @@ class AST2BlockList {
                 }
                 // Set the first child block number for this block
                 connections[property.connections["child"]] = childBlockNumbers[0];
+                if (!oneChild) {
+                    connections[property.connections["child"] + 1] = childBlockNumbers[1];
+                }
                 // Set parent block number for the first child to this block
                 let childBlock = blockList[childBlockNumbers[0]];
                 property = _propertyOf(childBlock);
@@ -835,6 +976,11 @@ class AST2BlockList {
                 // Parent of other children is their previous sibling
                 for (let i = 1; i < childBlockNumbers.length; i++) {
                     childBlock = blockList[childBlockNumbers[i]];
+                    if (!oneChild) {
+                        property = _propertyOf(childBlock);
+                        childBlock[4][property.connections["prev"]] = blockNumber;
+                        continue;
+                    }
                     property = _propertyOf(childBlock);
                     childBlock[4][property.connections["prev"]] = childBlockNumbers[i - 1];
                 }
@@ -842,6 +988,10 @@ class AST2BlockList {
                 for (let i = 0; i < childBlockNumbers.length - 1; i++) {
                     childBlock = blockList[childBlockNumbers[i]];
                     property = _propertyOf(childBlock);
+                    if (!oneChild) {
+                        childBlock[4][property.connections["next"]] = null;
+                        continue;
+                    }
                     childBlock[4][property.connections["next"]] = childBlockNumbers[i + 1];
                 }
                 // For blocks with children, add 1 to vspaces for the end of the clamp.
