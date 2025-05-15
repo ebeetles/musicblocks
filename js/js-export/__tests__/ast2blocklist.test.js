@@ -916,7 +916,19 @@ describe("AST2BlockList Class", () => {
                     await mouse.playPitch("sol", 4);
                     return mouse.ENDFLOW;
                 });
+                await mouse.playNote(1 / 4, async () => {
+                    await mouse.playPitch("sol", 4);
+                    return mouse.ENDFLOW;
+                });
+                await mouse.playNote(1 / 4, async () => {
+                    await mouse.playPitch("sol", 4);
+                    return mouse.ENDFLOW;
+                });
             } else {
+                await mouse.playNote(1 / 4, async () => {
+                    await mouse.playPitch("sol", 4);
+                    return mouse.ENDFLOW;
+                });
                 await mouse.playNote(1 / 6, async () => {
                     await mouse.playPitch("sol", 4);
                     return mouse.ENDFLOW;
@@ -929,7 +941,7 @@ describe("AST2BlockList Class", () => {
                 });
                 break;
             }
-            while (true) {
+            while (1000) {
                 await mouse.playNote(1 / 4, async () => {
                     await mouse.playPitch("sol", 4);
                     return mouse.ENDFLOW;
@@ -948,6 +960,8 @@ describe("AST2BlockList Class", () => {
                         return mouse.ENDFLOW;
                     });
                     break;
+                    break;
+                    break;
                 default:
                     await mouse.playNote(1 / 4, async () => {
                         await mouse.playPitch("5", 4);
@@ -960,9 +974,9 @@ describe("AST2BlockList Class", () => {
 
         const expectedBlockList = [
             [0, "start", 200, 200, [null, 1, null]],
-            [1, "ifthenelse", 0, 0, [0, 2, 3, 11, 19]],
+            [1, "ifthenelse", 0, 0, [0, 2, 3, 27, 43]],
             [2, ["boolean", { "value": true }], 0, 0, [1]],
-            [3, "newnote", 0, 0, [1, 4, 7, null]],
+            [3, "newnote", 0, 0, [1, 4, 7, 11]],
             [4, "divide", 0, 0, [3, 5, 6]],
             [5, ["number", { "value": 1 }], 0, 0, [4]],
             [6, ["number", { "value": 4 }], 0, 0, [4]],
@@ -970,66 +984,92 @@ describe("AST2BlockList Class", () => {
             [8, "pitch", 0, 0, [7, 9, 10, null]],
             [9, ["solfege", { "value": "sol" }], 0, 0, [8]],
             [10, ["number", { "value": 4 }], 0, 0, [8]],
-            [11, "newnote", 0, 0, [1, 12, 15, null]],
+            [11, "newnote", 0, 0, [3, 12, 15, 19]],
             [12, "divide", 0, 0, [11, 13, 14]],
             [13, ["number", { "value": 1 }], 0, 0, [12]],
-            [14, ["number", { "value": 6 }], 0, 0, [12]],
+            [14, ["number", { "value": 4 }], 0, 0, [12]],
             [15, "vspace", 0, 0, [11, 16]],
             [16, "pitch", 0, 0, [15, 17, 18, null]],
             [17, ["solfege", { "value": "sol" }], 0, 0, [16]],
             [18, ["number", { "value": 4 }], 0, 0, [16]],
-            [19, "forever", 0, 0, [1, 20, 29]],
-            [20, "newnote", 0, 0, [19, 21, 24, 28]],
-            [21, "divide", 0, 0, [20, 22, 23]],
-            [22, ["number", { "value": 1 }], 0, 0, [21]],
-            [23, ["number", { "value": 4 }], 0, 0, [21]],
-            [24, "vspace", 0, 0, [20, 25]],
-            [25, "pitch", 0, 0, [24, 26, 27, null]],
-            [26, ["solfege", { "value": "sol" }], 0, 0, [25]],
-            [27, ["number", { "value": 4 }], 0, 0, [25]],
-            [28, "break", 0, 0, [20, null, null, null]],
-            [29, "forever", 0, 0, [19, 30, 38]],
-            [30, "newnote", 0, 0, [29, 31, 34, null]],
-            [31, "divide", 0, 0, [30, 32, 33]],
-            [32, ["number", { "value": 1 }], 0, 0, [31]],
-            [33, ["number", { "value": 4 }], 0, 0, [31]],
-            [34, "vspace", 0, 0, [30, 35]],
-            [35, "pitch", 0, 0, [34, 36, 37, null]],
-            [36, ["solfege", { "value": "sol" }], 0, 0, [35]],
-            [37, ["number", { "value": 4 }], 0, 0, [35]],
-            [38, "until", 0, 0, [29, 39, 40, 49]],
-            [39, ["boolean", { "value": true }], 0, 0, [38]],
-            [40, "vspace", 0, 0, [38, 41]],
-            [41, "newnote", 0, 0, [40, 42, 45, null]],
-            [42, "divide", 0, 0, [41, 43, 44]],
-            [43, ["number", { "value": 1 }], 0, 0, [42]],
-            [44, ["number", { "value": 4 }], 0, 0, [42]],
-            [45, "vspace", 0, 0, [41, 46]],
-            [46, "pitch", 0, 0, [45, 47, 48, null]],
-            [47, ["solfege", { "value": "sol" }], 0, 0, [46]],
-            [48, ["number", { "value": 4 }], 0, 0, [46]],
-            [49, "switch", 0, 0, [38, 50, 51, null]],
-            [50, ["number", { "value": 1 }], 0, 0, [49]],
-            [51, "case", 0, 0, [49, 52, 53, 62]],
-            [52, ["number", { "value": 1 }], 0, 0, [51]],
-            [53, "newnote", 0, 0, [51, 54, 57, 61]],
-            [54, "divide", 0, 0, [53, 55, 56]],
-            [55, ["number", { "value": 1 }], 0, 0, [54]],
-            [56, ["number", { "value": 4 }], 0, 0, [54]],
-            [57, "vspace", 0, 0, [53, 58]],
-            [58, "pitch", 0, 0, [57, 59, 60, null]],
-            [59, ["solfege", { "value": "sol" }], 0, 0, [58]],
-            [60, ["number", { "value": 4 }], 0, 0, [58]],
-            [61, "break", 0, 0, [53, null, null, null]],
-            [62, "defaultcase", 0, 0, [51, 63, null, null]],
-            [63, "newnote", 0, 0, [62, 64, 67, null]],
-            [64, "divide", 0, 0, [63, 65, 66]],
-            [65, ["number", { "value": 1 }], 0, 0, [64]],
-            [66, ["number", { "value": 4 }], 0, 0, [64]],
-            [67, "vspace", 0, 0, [63, 68]],
-            [68, "pitch", 0, 0, [67, 69, 70, null]],
-            [69, ["solfege", { "value": "5" }], 0, 0, [68]],
-            [70, ["number", { "value": 4 }], 0, 0, [68]]
+            [19, "newnote", 0, 0, [11, 20, 23, null]],
+            [20, "divide", 0, 0, [19, 21, 22]],
+            [21, ["number", { "value": 1 }], 0, 0, [20]],
+            [22, ["number", { "value": 4 }], 0, 0, [20]],
+            [23, "vspace", 0, 0, [19, 24]],
+            [24, "pitch", 0, 0, [23, 25, 26, null]],
+            [25, ["solfege", { "value": "sol" }], 0, 0, [24]],
+            [26, ["number", { "value": 4 }], 0, 0, [24]],
+            [27, "newnote", 0, 0, [1, 28, 31, 35]],
+            [28, "divide", 0, 0, [27, 29, 30]],
+            [29, ["number", { "value": 1 }], 0, 0, [28]],
+            [30, ["number", { "value": 4 }], 0, 0, [28]],
+            [31, "vspace", 0, 0, [27, 32]],
+            [32, "pitch", 0, 0, [31, 33, 34, null]],
+            [33, ["solfege", { "value": "sol" }], 0, 0, [32]],
+            [34, ["number", { "value": 4 }], 0, 0, [32]],
+            [35, "newnote", 0, 0, [27, 36, 39, null]],
+            [36, "divide", 0, 0, [35, 37, 38]],
+            [37, ["number", { "value": 1 }], 0, 0, [36]],
+            [38, ["number", { "value": 6 }], 0, 0, [36]],
+            [39, "vspace", 0, 0, [35, 40]],
+            [40, "pitch", 0, 0, [39, 41, 42, null]],
+            [41, ["solfege", { "value": "sol" }], 0, 0, [40]],
+            [42, ["number", { "value": 4 }], 0, 0, [40]],
+            [43, "forever", 0, 0, [1, 44, 53]],
+            [44, "newnote", 0, 0, [43, 45, 48, 52]],
+            [45, "divide", 0, 0, [44, 46, 47]],
+            [46, ["number", { "value": 1 }], 0, 0, [45]],
+            [47, ["number", { "value": 4 }], 0, 0, [45]],
+            [48, "vspace", 0, 0, [44, 49]],
+            [49, "pitch", 0, 0, [48, 50, 51, null]],
+            [50, ["solfege", { "value": "sol" }], 0, 0, [49]],
+            [51, ["number", { "value": 4 }], 0, 0, [49]],
+            [52, "break", 0, 0, [44, null, null, null]],
+            [53, "forever", 0, 0, [43, 54, 62]],
+            [54, "newnote", 0, 0, [53, 55, 58, null]],
+            [55, "divide", 0, 0, [54, 56, 57]],
+            [56, ["number", { "value": 1 }], 0, 0, [55]],
+            [57, ["number", { "value": 4 }], 0, 0, [55]],
+            [58, "vspace", 0, 0, [54, 59]],
+            [59, "pitch", 0, 0, [58, 60, 61, null]],
+            [60, ["solfege", { "value": "sol" }], 0, 0, [59]],
+            [61, ["number", { "value": 4 }], 0, 0, [59]],
+            [62, "until", 0, 0, [53, 63, 64, 73]],
+            [63, ["boolean", { "value": true }], 0, 0, [62]],
+            [64, "vspace", 0, 0, [62, 65]],
+            [65, "newnote", 0, 0, [64, 66, 69, null]],
+            [66, "divide", 0, 0, [65, 67, 68]],
+            [67, ["number", { "value": 1 }], 0, 0, [66]],
+            [68, ["number", { "value": 4 }], 0, 0, [66]],
+            [69, "vspace", 0, 0, [65, 70]],
+            [70, "pitch", 0, 0, [69, 71, 72, null]],
+            [71, ["solfege", { "value": "sol" }], 0, 0, [70]],
+            [72, ["number", { "value": 4 }], 0, 0, [70]],
+            [73, "switch", 0, 0, [62, 74, 75, null]],
+            [74, ["number", { "value": 1 }], 0, 0, [73]],
+            [75, "case", 0, 0, [73, 76, 77, 88]],
+            [76, ["number", { "value": 1 }], 0, 0, [75]],
+            [77, "newnote", 0, 0, [75, 78, 81, 85]],
+            [78, "divide", 0, 0, [77, 79, 80]],
+            [79, ["number", { "value": 1 }], 0, 0, [78]],
+            [80, ["number", { "value": 4 }], 0, 0, [78]],
+            [81, "vspace", 0, 0, [77, 82]],
+            [82, "pitch", 0, 0, [81, 83, 84, null]],
+            [83, ["solfege", { "value": "sol" }], 0, 0, [82]],
+            [84, ["number", { "value": 4 }], 0, 0, [82]],
+            [85, "break", 0, 0, [77, 86, null, null]],
+            [86, "break", 0, 0, [85, 87, null, null]],
+            [87, "break", 0, 0, [86, null, null, null]],
+            [88, "defaultcase", 0, 0, [75, 89, null, null]],
+            [89, "newnote", 0, 0, [88, 90, 93, null]],
+            [90, "divide", 0, 0, [89, 91, 92]],
+            [91, ["number", { "value": 1 }], 0, 0, [90]],
+            [92, ["number", { "value": 4 }], 0, 0, [90]],
+            [93, "vspace", 0, 0, [89, 94]],
+            [94, "pitch", 0, 0, [93, 95, 96, null]],
+            [95, ["solfege", { "value": "5" }], 0, 0, [94]],
+            [96, ["number", { "value": 4 }], 0, 0, [94]]
         ];
 
         const AST = acorn.parse(code, { ecmaVersion: 2020 });

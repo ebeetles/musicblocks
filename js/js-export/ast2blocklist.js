@@ -918,6 +918,7 @@ class AST2BlockList {
          * @param {Array} blockList - where the new block is going to be added to
          * @returns {Number} the number (index in blockList) of the newly created block
          */
+
         function _createBlockAndAddToList(node, blockList) {
             let block = [];
             let blockNumber = blockList.length;
@@ -941,63 +942,76 @@ class AST2BlockList {
             let vspaces = Math.max(1, argVSpaces);  // A node takes at least 1 vertical space
 
             // Process children
-            let oneChild = true;
             if (node["children"] !== undefined && node["children"].length > 0) {
                 let childBlockNumbers = [];
+                let elseIndex = node.children.findIndex(child => child.name === "else");
+
+                let firstBranch = (elseIndex !== -1) ? node.children.slice(0, elseIndex) : node.children;
+                let secondBranch = (elseIndex !== -1) ? node.children.slice(elseIndex + 1) : [];
+
                 // Add vertical spacers if the arguments take too much vertical spaces
                 for (let i = 0; i < argVSpaces - property.argVSpaces; i++) {
                     childBlockNumbers.push(_addVSpacer(blockList));
                 }
-                // Add the children
-                for (const child of node["children"]) {
-                    if (child.name === "else") {
-                        oneChild = false;
-                        continue;
-                    }
-                    let ret = _createBlockAndAddToList(child, blockList);
-                    childBlockNumbers.push(ret["blockNumber"]);
-                    vspaces += ret["vspaces"];
-                    // Add vertical spacers to push down next siblings if the block takes
-                    // too much vertical spaces
-                    let childProperty = _propertyOf(blockList[ret["blockNumber"]]);
-                    for (let i = 0; i < ret["vspaces"] - childProperty.vspaces; i++) {
-                        childBlockNumbers.push(_addVSpacer(blockList));
-                    }
-                }
-                // Set the first child block number for this block
-                connections[property.connections["child"]] = childBlockNumbers[0];
-                if (!oneChild) {
-                    connections[property.connections["child"] + 1] = childBlockNumbers[1];
-                }
-                // Set parent block number for the first child to this block
-                let childBlock = blockList[childBlockNumbers[0]];
-                property = _propertyOf(childBlock);
-                childBlock[4][property.connections["prev"]] = blockNumber;
-                // Parent of other children is their previous sibling
-                for (let i = 1; i < childBlockNumbers.length; i++) {
-                    childBlock = blockList[childBlockNumbers[i]];
-                    if (!oneChild) {
-                        property = _propertyOf(childBlock);
-                        childBlock[4][property.connections["prev"]] = blockNumber;
-                        continue;
-                    }
-                    property = _propertyOf(childBlock);
-                    childBlock[4][property.connections["prev"]] = childBlockNumbers[i - 1];
-                }
-                // Set the next sibling block number for the children, except the last one
-                for (let i = 0; i < childBlockNumbers.length - 1; i++) {
-                    childBlock = blockList[childBlockNumbers[i]];
-                    property = _propertyOf(childBlock);
-                    if (!oneChild) {
-                        childBlock[4][property.connections["next"]] = null;
-                        continue;
-                    }
-                    childBlock[4][property.connections["next"]] = childBlockNumbers[i + 1];
+
+                // Process branches
+                _processBranch(firstBranch, blockList, blockNumber, connections, property, childBlockNumbers, vspaces, false);
+                if (elseIndex !== -1) {
+                    _processBranch(secondBranch, blockList, blockNumber, connections, property, childBlockNumbers, vspaces, true);
                 }
                 // For blocks with children, add 1 to vspaces for the end of the clamp.
                 vspaces += 1;
             }
+
             return { "blockNumber": blockNumber, "vspaces": vspaces };
+        }
+
+        // Helper to process a branch (either if or else)
+        function _processBranch(children, blockList, blockNumber, connections, property, childBlockNumbers, vspaces, isElseBranch) {
+            let start = childBlockNumbers.length;
+
+            // Add the children
+            for (const child of children) {
+                let ret = _createBlockAndAddToList(child, blockList);
+                childBlockNumbers.push(ret.blockNumber);
+                vspaces += ret.vspaces;
+
+                let childProperty = _propertyOf(blockList[ret.blockNumber]);
+                for (let i = 0; i < ret.vspaces - childProperty.vspaces; i++) {
+                    childBlockNumbers.push(_addVSpacer(blockList));
+                }
+            }
+
+            // Set child connection
+            connections[property.connections["child"]] = childBlockNumbers[0];
+            if (isElseBranch) {
+                connections[property.connections["child"] + 1] = childBlockNumbers[start];
+            }
+
+            let childBlock = blockList[childBlockNumbers[0]];
+            property = _propertyOf(childBlock);
+            childBlock[4][property.connections["prev"]] = blockNumber;
+            // Parent of other children is their previous sibling
+            for (let i = 1; i < childBlockNumbers.length; i++) {
+                childBlock = blockList[childBlockNumbers[i]];
+                if (isElseBranch && i === start) {
+                    property = _propertyOf(childBlock);
+                    childBlock[4][property.connections["prev"]] = blockNumber;
+                    continue;
+                }
+                property = _propertyOf(childBlock);
+                childBlock[4][property.connections["prev"]] = childBlockNumbers[i - 1];
+            }
+            // Set the next sibling block number for the children, except the last one
+            for (let i = 0; i < childBlockNumbers.length - 1; i++) {
+                childBlock = blockList[childBlockNumbers[i]];
+                property = _propertyOf(childBlock);
+                if (isElseBranch && i === start - 1) {
+                    childBlock[4][property.connections["next"]] = null;
+                    continue;
+                }
+                childBlock[4][property.connections["next"]] = childBlockNumbers[i + 1];
+            }
         }
 
         function _addVSpacer(blockList) {
